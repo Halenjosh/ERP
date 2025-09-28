@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* DSU Theme Variables */
+:root {
+  --dsu-primary: #0ea5e9;      /* sky-500 */
+  --dsu-primary-600: #0284c7;  /* sky-600 */
+  --dsu-indigo: #4f46e5;       /* indigo-600 */
+  --dsu-accent: #16a34a;       /* green-600 */
+  --dsu-danger: #dc2626;       /* red-600 */
+}
+
+.btn-dsu-primary {
+  @apply bg-sky-600 text-white hover:bg-sky-700;
+}
+
+.badge-dsu-primary {
+  @apply px-2 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200;
+}

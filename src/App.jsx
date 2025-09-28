@@ -24,15 +24,33 @@ function App() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    // Restore session only if 'remember' was set
+    try {
+      const remember = localStorage.getItem('remember') === '1';
+      const savedUser = localStorage.getItem('user');
+      if (remember && savedUser) {
+        setUser(JSON.parse(savedUser));
+      } else {
+        localStorage.removeItem('user');
+        localStorage.removeItem('remember');
+        setUser(null);
+      }
+    } catch {
+      setUser(null);
     }
   }, []);
 
-  const login = (userData) => {
+  const login = (userData, remember = false) => {
     setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+    try {
+      if (remember) {
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('remember', '1');
+      } else {
+        localStorage.removeItem('user');
+        localStorage.removeItem('remember');
+      }
+    } catch {}
   };
 
   const logout = () => {

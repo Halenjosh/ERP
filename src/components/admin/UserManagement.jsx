@@ -106,218 +106,192 @@ const UserManagement = () => {
   };
 
   const formatRole = (role) => {
-    return (role || '').replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return (role || '').replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
   const filteredUsers = selectedRole === 'all' 
     ? users 
     : users.filter(u => u.role === selectedRole);
-
+  
   return (
     <div className="flex h-screen bg-gray-50">
       {sidebarVisible && <Sidebar />}
-      
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         
         <main className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-                <p className="text-gray-600 mt-2">Manage system users and their permissions</p>
-              </div>
-              
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
-                <Plus className="w-5 h-5 mr-2" />
-                Add New User
-              </button>
-            </div>
+  <div className="max-w-7xl mx-auto">
+    {/* Page header */}
+    <div className="flex items-center justify-between mb-8">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">DSU User Management</h1>
+        <p className="text-gray-600 mt-2">Manage system users and their permissions</p>
+      </div>
+      <button className="btn-dsu-primary px-4 py-2 rounded-lg transition-colors flex items-center">
+        <Plus className="w-5 h-5 mr-2" />
+        Add New User
+      </button>
+    </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-              <div className="p-6 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">System Users</h2>
-                  <div className="flex items-center space-x-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder="Search users..."
-                        className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                    <select
-                      value={selectedRole}
-                      onChange={(e) => setSelectedRole(e.target.value)}
-                      className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {roles.map(role => (
-                        <option key={role} value={role}>
-                          {role === 'all' ? 'All Roles' : formatRole(role)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <button className="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 mt-6">
-                    <Filter className="w-4 h-4 mr-2" />
-                    More Filters
-                  </button>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        User Details
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Role & Department
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Contact Information
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Last Login
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredUsers.map((userData) => (
-                      <tr key={userData.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                              <span className="text-white font-semibold">
-                                {userData.name.charAt(0)}
-                              </span>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{userData.name}</div>
-                              <div className="text-sm text-gray-500">@{userData.username}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div>
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(userData.role)}`}>
-                              {formatRole(userData.role)}
-                            </span>
-                            <div className="text-sm text-gray-500 mt-1">{userData.department}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="space-y-1">
-                            <div className="flex items-center text-sm text-gray-900">
-                              <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                              {userData.email}
-                            </div>
-                            <div className="flex items-center text-sm text-gray-500">
-                              <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                              {userData.phone}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(userData.status)}`}>
-                            {userData.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(userData.lastLogin).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center space-x-2">
-                            <button className="text-blue-600 hover:text-blue-900">
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button className="text-green-600 hover:text-green-900">
-                              <Shield className="w-4 h-4" />
-                            </button>
-                            <button className="text-red-600 hover:text-red-900">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Users className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-sm font-medium text-gray-500">Total Users</h3>
-                    <p className="text-2xl font-bold text-gray-900">{users.length}</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Shield className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-sm font-medium text-gray-500">Active Users</h3>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {users.filter(u => u.status === 'active').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Users className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-sm font-medium text-gray-500">Faculty</h3>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {users.filter(u => u.role === 'faculty').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <Users className="w-6 h-6 text-yellow-600" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-sm font-medium text-gray-500">Students</h3>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {users.filter(u => u.role === 'student').length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+    {/* Filters/Search */}
+    <div className="p-6 border-b border-gray-200">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-gray-900">System Users</h2>
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search users..."
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
-        </main>
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+          <select
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            {roles.map((role) => (
+              <option key={role} value={role}>
+                {role === 'all' ? 'All Roles' : formatRole(role)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button className="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 mt-6">
+          <Filter className="w-4 h-4 mr-2" />
+          More Filters
+        </button>
+      </div>
+    </div>
+
+    {/* Users table */}
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Details</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role & Department</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact Information</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Login</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {filteredUsers.map((userData) => (
+            <tr key={userData.id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex items-center">
+                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                    <span className="text-white font-semibold">{userData.name.charAt(0)}</span>
+                  </div>
+                  <div className="ml-4">
+                    <div className="text-sm font-medium text-gray-900">{userData.name}</div>
+                    <div className="text-sm text-gray-500">@{userData.username}</div>
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div>
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(userData.role)}`}>
+                    {formatRole(userData.role)}
+                  </span>
+                  <div className="text-sm text-gray-500 mt-1">{userData.department}</div>
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="space-y-1">
+                  <div className="flex items-center text-sm text-gray-900">
+                    <Mail className="w-4 h-4 mr-2 text-gray-400" />
+                    {userData.email}
+                  </div>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                    {userData.phone}
+                  </div>
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(userData.status)}`}>
+                  {userData.status}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {new Date(userData.lastLogin).toLocaleDateString()}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div className="flex items-center space-x-2">
+                  <button className="text-blue-600 hover:text-blue-900"><Edit className="w-4 h-4" /></button>
+                  <button className="text-green-600 hover:text-green-900"><Shield className="w-4 h-4" /></button>
+                  <button className="text-red-600 hover:text-red-900"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {/* Stats grid */}
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center">
+          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+            <Users className="w-6 h-6 text-blue-600" />
+          </div>
+          <div className="ml-4">
+            <h3 className="text-sm font-medium text-gray-500">Total Users</h3>
+            <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center">
+          <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+            <Shield className="w-6 h-6 text-green-600" />
+          </div>
+          <div className="ml-4">
+            <h3 className="text-sm font-medium text-gray-500">Active Users</h3>
+            <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.status === 'active').length}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center">
+          <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+            <Users className="w-6 h-6 text-purple-600" />
+          </div>
+          <div className="ml-4">
+            <h3 className="text-sm font-medium text-gray-500">Faculty</h3>
+            <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.role === 'faculty').length}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center">
+          <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+            <Users className="w-6 h-6 text-yellow-600" />
+          </div>
+          <div className="ml-4">
+            <h3 className="text-sm font-medium text-gray-500">Students</h3>
+            <p className="text-2xl font-bold text-gray-900">{users.filter(u => u.role === 'student').length}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </main>
       </div>
     </div>
   );

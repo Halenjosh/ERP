@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AuthContext } from '../../App';
 import Sidebar from '../layout/Sidebar';
 import Header from '../layout/Header';
+import { useData } from '../../contexts/DataContext.jsx';
+import { useToaster } from '../../contexts/ToastContext.jsx';
 import {
   Calendar,
   Plus,
@@ -19,13 +21,7 @@ import {
   ArrowUpDown,
 } from 'lucide-react';
 
-const LS_KEY = 'exam_scheduling_v1_aligned';
-
-const sampleExams = [
-  { id: '1', title: 'Computer Networks', subject: 'CS301', date: '2025-03-18', time: '10:00', duration: '03:00', type: 'final', venue: 'Hall A', department: 'Computer Science', semester: 6, status: 'scheduled', students: 67 },
-  { id: '2', title: 'Database Systems', subject: 'CS302', date: '2025-03-20', time: '14:00', duration: '02:00', type: 'midterm', venue: 'Hall B', department: 'Computer Science', semester: 4, status: 'scheduled', students: 89 },
-  { id: '3', title: 'Software Engineering', subject: 'CS401', date: '2025-03-22', time: '09:00', duration: '03:00', type: 'final', venue: 'Hall C', department: 'Computer Science', semester: 8, status: 'scheduled', students: 124 },
-];
+// Exams are now provided by the shared DataContext
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
@@ -58,19 +54,13 @@ const fmtDate = (iso) => {
 const ExamScheduling = () => {
   const { user, sidebarVisible } = useContext(AuthContext);
   const canEdit = ['coe', 'assistant_coe', 'dept_coordinator'].includes(user?.role);
-
-  const [exams, setExams] = useState(() => {
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch {}
-    return sampleExams;
-  });
+  const { exams, setExams, departments, selectedDepartment, examTypes, getExamTypeLabel } = useData();
+  const toaster = useToaster();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterType, setFilterType] = useState('all');
-  const [filterDept, setFilterDept] = useState('all');
+  const [filterDept, setFilterDept] = useState(selectedDepartment || 'all');
   const [sortBy, setSortBy] = useState('date-asc');
   const [view, setView] = useState('list');
   const [currentMonth, setCurrentMonth] = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
@@ -84,11 +74,14 @@ const ExamScheduling = () => {
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 6;
 
-  useEffect(() => {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(exams)); } catch {}
-  }, [exams]);
+  // Persistence is handled by DataContext; no localStorage here
 
-  const departments = useMemo(() => Array.from(new Set(exams.map((e) => e.department))), [exams]);
+  // Sync department filter with global selection
+  useEffect(() => {
+    setFilterDept(selectedDepartment || 'all');
+  }, [selectedDepartment]);
+
+  const departmentFilterOptions = useMemo(() => Array.from(new Set(exams.map((e) => e.department))), [exams]);
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const pipeline = exams
@@ -114,9 +107,24 @@ const ExamScheduling = () => {
   const openAddModal = () => { setEditExam(null); setIsAddEditOpen(true); };
   const openEditModal = (exam) => { setEditExam(exam); setIsAddEditOpen(true); };
   const saveExam = (data) => {
-    if (!data.title || !data.subject || !data.date || !data.time) { alert('Please fill Title, Subject, Date and Time.'); return; }
-    if (data.id) { setExams((prev) => prev.map((p) => (p.id === data.id ? { ...p, ...data } : p))); }
-    else { setExams((prev) => [{ ...data, id: uid() }, ...prev]); }
+    if (!data.title || !data.subject || !data.date || !data.time) {
+      toaster.error('Please fill Title, Subject, Date and Time.');
+      return;
+    }
+    if (!data.department) {
+      toaster.error('Please select a Department.');
+      return;
+    }
+    const semNum = Number(data.semester);
+    if (!semNum || semNum < 1 || semNum > 10) {
+      toaster.error('Please select a valid Semester (1-10).');
+      return;
+    }
+    if (data.id) {
+      setExams((prev) => prev.map((p) => (p.id === data.id ? { ...p, ...data } : p)));
+    } else {
+      setExams((prev) => [{ ...data, id: uid() }, ...prev]);
+    }
     setIsAddEditOpen(false);
   };
   const confirmDelete = (exam) => { setToDelete(exam); setIsDeleteOpen(true); };
@@ -187,9 +195,12 @@ const ExamScheduling = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700">Type</label>
               <select value={form.type} onChange={(e) => update('type', e.target.value)} className="mt-1 block w-full rounded-lg border px-3 py-2">
-                <option value="midterm">Midterm</option>
-                <option value="final">Final</option>
-                <option value="retest">Retest</option>
+                {examTypes.map((t) => (
+                  <option key={t.id} value={t.id}>{t.label}</option>
+                ))}
+                {!examTypes.find((t) => t.id === 'retest') && (
+                  <option value="retest">Retest</option>
+                )}
               </select>
             </div>
 
@@ -200,12 +211,22 @@ const ExamScheduling = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">Department</label>
-              <input value={form.department} onChange={(e) => update('department', e.target.value)} className="mt-1 block w-full rounded-lg border px-3 py-2" />
+              <select value={form.department} onChange={(e) => update('department', e.target.value)} className="mt-1 block w-full rounded-lg border px-3 py-2">
+                <option value="">Select department</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700">Semester</label>
-              <input type="number" min="1" max="10" value={form.semester} onChange={(e) => update('semester', Number(e.target.value))} className="mt-1 block w-full rounded-lg border px-3 py-2" />
+              <select value={form.semester} onChange={(e) => update('semester', Number(e.target.value))} className="mt-1 block w-full rounded-lg border px-3 py-2">
+                <option value="">Select semester</option>
+                {Array.from({ length: 8 }, (_, i) => i + 1).map((s) => (
+                  <option key={s} value={s}>{`Semester ${s}`}</option>
+                ))}
+              </select>
             </div>
 
             <div>
@@ -268,7 +289,7 @@ const ExamScheduling = () => {
 
             <div className="flex items-center gap-2">
               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${styles.status}`}>{exam.status}</span>
-              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${styles.type}`}>{exam.type}</span>
+              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${styles.type}`}>{getExamTypeLabel(exam.type)}</span>
             </div>
 
             <div className="text-sm text-gray-700"><strong>Subject:</strong> {exam.subject}</div>
@@ -327,7 +348,7 @@ const ExamScheduling = () => {
 
           <div className="flex items-center gap-3">
             <div className="text-sm text-gray-600">{monthExams.length} exams this month</div>
-            {canEdit && <button onClick={() => openAddModal()} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white"><Plus className="w-4 h-4" />New</button>}
+            {canEdit && <button onClick={() => openAddModal()} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg btn-dsu-primary"><Plus className="w-4 h-4" />New</button>}
           </div>
         </div>
 
@@ -368,7 +389,7 @@ const ExamScheduling = () => {
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Exam Scheduling</h1>
+                <h1 className="text-3xl font-bold text-gray-900">DSU Exam Scheduling</h1>
                 <p className="text-gray-600 mt-1">Manage exam timetables and schedules</p>
               </div>
 
@@ -389,14 +410,18 @@ const ExamScheduling = () => {
 
                   <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="rounded-lg border px-3 py-2 text-sm">
                     <option value="all">All types</option>
-                    <option value="midterm">Midterm</option>
-                    <option value="final">Final</option>
-                    <option value="retest">Retest</option>
+                    {examTypes.map((t) => (
+                      <option key={t.id} value={t.id}>{t.label}</option>
+                    ))}
+                    {/* Legacy fallback */}
+                    {!examTypes.find((t) => t.id === 'retest') && (
+                      <option value="retest">Retest</option>
+                    )}
                   </select>
 
                   <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="rounded-lg border px-3 py-2 text-sm">
                     <option value="all">All departments</option>
-                    {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+                    {departmentFilterOptions.map((d) => <option key={d} value={d}>{d}</option>)}
                   </select>
 
                   <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="rounded-lg border px-3 py-2 text-sm">
@@ -409,7 +434,7 @@ const ExamScheduling = () => {
                     {view === 'list' ? 'Calendar view' : 'List view'}
                   </button>
 
-                  {canEdit && <button onClick={() => openAddModal()} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white"><Plus className="w-4 h-4" />Schedule</button>}
+                  {canEdit && <button onClick={() => openAddModal()} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg btn-dsu-primary"><Plus className="w-4 h-4" />Schedule</button>}
                 </div>
               </div>
             </div>
@@ -472,14 +497,13 @@ const ExamScheduling = () => {
                             <td className="px-6 py-4 align-middle">
                               <div className="space-y-1">
                                 <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(exam.status)}`}>{exam.status}</span>
-                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(exam.type)}`}>{exam.type}</span>
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getTypeColor(exam.type)}`}>{getExamTypeLabel(exam.type)}</span>
                               </div>
                             </td>
 
                             {canEdit && (
                               <td className="px-6 py-4 align-middle text-sm font-medium">
                                 <div className="flex items-center space-x-3">
-                                  <button title="View details" onClick={() => setDetailsExam(exam)} className="text-indigo-600 hover:text-indigo-800"><Eye className="w-4 h-4" /></button>
                                   <button title="Edit exam" onClick={() => openEditModal(exam)} className="text-blue-600 hover:text-blue-900"><Edit className="w-4 h-4" /></button>
                                   <button title="Delete exam" onClick={() => confirmDelete(exam)} className="text-red-600 hover:text-red-900"><Trash2 className="w-4 h-4" /></button>
                                 </div>

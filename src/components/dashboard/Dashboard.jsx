@@ -16,11 +16,10 @@ const Dashboard = () => {
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
-        
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">DSU Dashboard</h1>
               <p className="text-gray-600">
                 {user?.role === 'coe' && "Controller of Examinations - Manage all examination processes"}
                 {user?.role === 'assistant_coe' && "Assistant CoE - Support examination management"}
