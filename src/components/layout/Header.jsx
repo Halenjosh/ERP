@@ -23,22 +23,31 @@ const Header = () => {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <button aria-label="Toggle sidebar" className="p-2 rounded-lg hover:bg-gray-100" onClick={toggleSidebar}>
+        {/* Left side - Logo and welcome message */}
+        <div className="flex items-center">
+          <button 
+            aria-label="Toggle sidebar" 
+            className="p-2 rounded-lg hover:bg-gray-100 mr-4" 
+            onClick={toggleSidebar}
+          >
             <LayoutDashboard className="w-5 h-5 text-gray-700" />
           </button>
-          <img
-            src={crestPrimary}
-            onError={(e) => { if (e.currentTarget.src !== crestFallback) e.currentTarget.src = crestFallback; }}
-            alt="DSU crest"
-            className="w-8 h-8 rounded-full border border-gray-200"
-          />
-          <span className="font-semibold text-gray-900">DSU CoE ERP</span>
-          <span className="text-gray-300">|</span>
-          <h2 className="text-xl font-medium text-gray-900">Welcome back, {displayName}</h2>
+          
+          <div className="flex items-center">
+            <img
+              src={crestPrimary}
+              onError={(e) => { if (e.currentTarget.src !== crestFallback) e.currentTarget.src = crestFallback; }}
+              alt="DSU crest"
+              className="w-8 h-8 rounded-full border border-gray-200"
+            />
+            <span className="font-semibold text-gray-900 ml-3">DSU CoE ERP</span>
+            <span className="text-gray-300 mx-4">|</span>
+            <h2 className="text-xl font-medium text-gray-900">Welcome back, {displayName}</h2>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        {/* Right side - Controls and user info */}
+        <div className="flex items-center gap-4">
           <div>
             <select
               value={selectedDepartment}
@@ -52,11 +61,13 @@ const Header = () => {
               ))}
             </select>
           </div>
+          
           {selectedDepartment && (
             <span className="px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-700 border border-blue-200" title="Current Department">
               Dept: {deptLabel}
             </span>
           )}
+          
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -69,12 +80,15 @@ const Header = () => {
             />
           </div>
 
-          <button className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" onClick={() => window.alert('Notifications (stub)')}>
+          <button 
+            className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" 
+            onClick={() => window.alert('Notifications (stub)')}
+          >
             <Bell className="w-6 h-6" />
             <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full"></span>
           </button>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
               <User className="w-5 h-5 text-white" />
             </div>

@@ -11,6 +11,7 @@ import {
   BarChart3,
   Users,
   Bell,
+  ClipboardList,
   LogOut
 } from 'lucide-react';
 
@@ -27,18 +28,32 @@ const Sidebar = () => {
     const roleSpecificItems = {
       coe: [
         { icon: Calendar, label: 'Exam Scheduling', path: '/exam-scheduling' },
+        { icon: Calendar, label: 'Exam Time Table', path: '/exam-timetable' },
         { icon: CreditCard, label: 'Hall Tickets', path: '/hall-tickets' },
+        { icon: ClipboardList, label: 'Exam Attendance', path: '/exam-attendance' },
+        { icon: ClipboardList, label: 'Paper Bundles', path: '/paper-bundles' },
+        { icon: Users, label: 'Hall Presence', path: '/exam-hall-presence' },
         { icon: FileText, label: 'Question Bank', path: '/question-bank' },
         { icon: Edit3, label: 'Mark Entry', path: '/mark-entry' },
+        { icon: Users, label: 'Academics', path: '/coe/academics' },
+        { icon: FileText, label: 'Reval Intake', path: '/reval/admin/intake' },
+        { icon: Edit3, label: 'Reval Assignment', path: '/reval/admin/assignment' },
         { icon: Award, label: 'Results', path: '/results' },
         { icon: BarChart3, label: 'Analytics', path: '/analytics' },
         { icon: Users, label: 'User Management', path: '/users' },
       ],
       assistant_coe: [
         { icon: Calendar, label: 'Exam Scheduling', path: '/exam-scheduling' },
+        { icon: Calendar, label: 'Exam Time Table', path: '/exam-timetable' },
         { icon: CreditCard, label: 'Hall Tickets', path: '/hall-tickets' },
+        { icon: ClipboardList, label: 'Exam Attendance', path: '/exam-attendance' },
+        { icon: ClipboardList, label: 'Paper Bundles', path: '/paper-bundles' },
+        { icon: Users, label: 'Hall Presence', path: '/exam-hall-presence' },
         { icon: FileText, label: 'Question Bank', path: '/question-bank' },
         { icon: Edit3, label: 'Mark Entry', path: '/mark-entry' },
+        { icon: Users, label: 'Academics', path: '/coe/academics' },
+        { icon: FileText, label: 'Reval Intake', path: '/reval/admin/intake' },
+        { icon: Edit3, label: 'Reval Assignment', path: '/reval/admin/assignment' },
         { icon: Award, label: 'Results', path: '/results' },
         { icon: BarChart3, label: 'Analytics', path: '/analytics' },
       ],
@@ -46,16 +61,30 @@ const Sidebar = () => {
         { icon: FileText, label: 'Question Bank', path: '/question-bank' },
         { icon: Edit3, label: 'Mark Entry', path: '/mark-entry' },
         { icon: Calendar, label: 'Exam Schedule', path: '/exam-scheduling' },
+        { icon: Calendar, label: 'Exam Time Table', path: '/exam-timetable' },
+        { icon: ClipboardList, label: 'Exam Attendance', path: '/exam-attendance' },
+        { icon: ClipboardList, label: 'Paper Bundles', path: '/paper-bundles' },
+        { icon: Users, label: 'Hall Presence', path: '/exam-hall-presence' },
+        { icon: Edit3, label: 'Reval Workbench', path: '/reval/examiner' },
       ],
       student: [
         { icon: CreditCard, label: 'Hall Tickets', path: '/hall-tickets' },
         { icon: Award, label: 'Results', path: '/results' },
         { icon: Calendar, label: 'Exam Schedule', path: '/exam-scheduling' },
+        { icon: Calendar, label: 'Exam Time Table', path: '/exam-timetable' },
+        { icon: ClipboardList, label: 'Exam Attendance', path: '/exam-attendance' },
+        { icon: Edit3, label: 'Revaluation Apply', path: '/reval/apply' },
+        { icon: FileText, label: 'My Applications', path: '/reval/my-applications' },
+        { icon: FileText, label: 'Revaluation Results', path: '/reval/results' },
       ],
       dept_coordinator: [
         { icon: Calendar, label: 'Exam Scheduling', path: '/exam-scheduling' },
+        { icon: Calendar, label: 'Exam Time Table', path: '/exam-timetable' },
         { icon: FileText, label: 'Question Bank', path: '/question-bank' },
         { icon: Edit3, label: 'Mark Entry', path: '/mark-entry' },
+        { icon: ClipboardList, label: 'Exam Attendance', path: '/exam-attendance' },
+        { icon: ClipboardList, label: 'Paper Bundles', path: '/paper-bundles' },
+        { icon: Users, label: 'Hall Presence', path: '/exam-hall-presence' },
         { icon: Award, label: 'Results', path: '/results' },
         { icon: BarChart3, label: 'Analytics', path: '/analytics' },
       ],
@@ -71,13 +100,13 @@ const Sidebar = () => {
   const displayRole = user?.role?.replace('_', ' ') || 'guest';
 
   return (
-    <div className="bg-white w-64 min-h-screen border-r border-gray-200 flex flex-col">
+    <div className="bg-white w-64 h-screen border-r border-gray-200 flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <h1 className="text-xl font-bold text-gray-900">CoE ERP</h1>
         <p className="text-sm text-gray-600 mt-1">Exam Management System</p>
       </div>
 
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;

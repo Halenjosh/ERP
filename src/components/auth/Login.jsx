@@ -18,7 +18,8 @@ const Login = () => {
     { id: '1', username: 'coe', password: 'coe123', name: 'Dr. Sarah Johnson', role: 'coe', department: 'Administration', email: 'coe@university.edu' },
     { id: '2', username: 'acoe', password: 'acoe123', name: 'Prof. Michael Chen', role: 'assistant_coe', department: 'Administration', email: 'acoe@university.edu' },
     { id: '3', username: 'faculty', password: 'faculty123', name: 'Dr. Emma Wilson', role: 'faculty', department: 'Computer Science', email: 'emma@university.edu' },
-    { id: '4', username: 'student', password: 'student123', name: 'Alex Rodriguez', role: 'student', department: 'Computer Science', email: 'alex@university.edu' },
+    // Align student with DataContext sampleStudents (id STU-001, rollNumber CS2021001)
+    { id: 'STU-001', studentId: 'STU-001', rollNumber: 'CS2021001', username: 'student', password: 'student123', name: 'Alex Rodriguez', role: 'student', department: 'Computer Science', email: 'alex@university.edu' },
     { id: '5', username: 'coord', password: 'coord123', name: 'Prof. David Kumar', role: 'dept_coordinator', department: 'Computer Science', email: 'coord@university.edu' },
   ];
 
@@ -38,7 +39,7 @@ const Login = () => {
         if (role === 'coe' || role === 'assistant_coe') navigate('/dashboard');
         else if (role === 'dept_coordinator') navigate('/exam-scheduling');
         else if (role === 'faculty') navigate('/mark-entry');
-        else if (role === 'student') navigate('/hall-tickets');
+        else if (role === 'student') navigate('/results');
         else navigate('/dashboard');
       } else {
         setError('Invalid credentials. Try: coe/coe123, faculty/faculty123, student/student123');

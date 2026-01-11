@@ -36,6 +36,141 @@ const addWatermark = (doc) => {
   }
 };
 
+const StudentResults = ({ externalResults = null }) => {
+  const { user, sidebarVisible } = useContext(AuthContext);
+  const { getResultsByStudent, getStudentById, semesters } = useData();
+  const studentId = user?.id || user?.studentId || 'STU-001';
+  const student = getStudentById(studentId);
+  // If externalResults (from CoE localStorage) is provided, use only published entries for this student
+  const all = useMemo(() => {
+    if (externalResults) {
+      const keys = [studentId, student?.rollNumber].filter(Boolean);
+      return (externalResults || []).filter(r => keys.includes(r.studentId) && String(r.status) === 'published');
+    }
+    return getResultsByStudent(studentId).filter(r => String(r.status) === 'published');
+  }, [externalResults, getResultsByStudent, studentId, student?.rollNumber]);
+
+  // list available semesters from results
+  const semList = useMemo(() => {
+    const set = new Set((all || []).map(r => String(r.semester || '')));
+    return Array.from(set).filter(Boolean).sort((a,b)=> Number(a)-Number(b));
+  }, [all]);
+  const defaultSem = semList.length ? semList[semList.length-1] : '1';
+  const [sem, setSem] = useState(defaultSem);
+
+  useEffect(()=>{ if (semList.length) setSem(semList[semList.length-1]); }, [semList.join(',')]);
+
+  // If using externalResults (CoE resultsData), pick subjects for the selected semester
+  const subjectsForSem = useMemo(() => {
+    if (!externalResults) return null;
+    const entry = (all || []).find(r => String(r.semester) === String(sem));
+    return entry ? (entry.subjects || []) : [];
+  }, [all, sem, externalResults]);
+
+  // latest per course (for internal results data model)
+  const latestForSem = useMemo(() => {
+    if (externalResults) return [];
+    const map = new Map();
+    (all || []).forEach(r => {
+      if (String(r.semester) !== String(sem)) return;
+      const prev = map.get(r.courseCode);
+      if (!prev || (r.version||0) > (prev.version||0)) map.set(r.courseCode, r);
+    });
+    return Array.from(map.values()).sort((a,b)=> (a.courseCode||'').localeCompare(b.courseCode||''));
+  }, [all, sem, externalResults]);
+
+
+  return (
+    <div className="flex h-screen bg-gray-50">
+      {sidebarVisible && <Sidebar />}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-5xl mx-auto space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">My Results</h1>
+                <p className="text-gray-600">{student?.name || 'Student'} • {student?.rollNumber || studentId}</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-600 mr-2">Semester</label>
+                <select className="border rounded-lg px-3 py-2" value={sem} onChange={(e)=> setSem(e.target.value)}>
+                  {(semList.length ? semList : semesters).map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="bg-white border rounded-lg overflow-hidden">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 text-gray-600">
+                  {externalResults ? (
+                    <tr>
+                      <th className="text-left px-4 py-2">Subject</th>
+                      <th className="text-left px-4 py-2">Marks</th>
+                      <th className="text-left px-4 py-2">Grade</th>
+                    </tr>
+                  ) : (
+                    <tr>
+                      <th className="text-left px-4 py-2">Course</th>
+                      <th className="text-left px-4 py-2">Internal</th>
+                      <th className="text-left px-4 py-2">External</th>
+                      <th className="text-left px-4 py-2">Practical</th>
+                      <th className="text-left px-4 py-2">Total</th>
+                      <th className="text-left px-4 py-2">Grade</th>
+                      <th className="text-left px-4 py-2">Status</th>
+                    </tr>
+                  )}
+                </thead>
+                <tbody>
+                  {externalResults ? (
+                    subjectsForSem && subjectsForSem.length > 0 ? (
+                      subjectsForSem.map((s, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="px-4 py-2">{s.name}</td>
+                          <td className="px-4 py-2">{s.marks}</td>
+                          <td className="px-4 py-2">{s.grade}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr><td colSpan={3} className="px-4 py-8 text-center text-gray-500">No results for Semester {sem}</td></tr>
+                    )
+                  ) : (
+                    latestForSem.length === 0 ? (
+                      <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-500">No results for Semester {sem}</td></tr>
+                    ) : latestForSem.map(v => (
+                      <tr key={v.courseCode} className="border-t">
+                        <td className="px-4 py-2">{v.courseName || v.courseCode}</td>
+                        <td className="px-4 py-2">{v.internal}</td>
+                        <td className="px-4 py-2">{v.external}</td>
+                        <td className="px-4 py-2">{v.practical}</td>
+                        <td className="px-4 py-2">{v.total}</td>
+                        <td className="px-4 py-2">{v.grade}</td>
+                        <td className="px-4 py-2">{v.resultStatus}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="bg-white border rounded-lg p-4">
+              <h2 className="font-semibold mb-2">Previous Semesters</h2>
+              <div className="flex flex-wrap gap-2">
+                {(semList.length ? semList : semesters).map(s => (
+                  <button key={s} onClick={()=> setSem(s)} className={`px-3 py-1.5 rounded-lg border ${String(s)===String(sem)?'bg-blue-50 border-blue-300 text-blue-700':'hover:bg-gray-50'}`}>
+                    Sem {s} {String(s)===String(sem)?'• current':''}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+
 const ResultProcessing = () => {
   const { user, sidebarVisible } = useContext(AuthContext);
   const toaster = useToaster();
@@ -43,6 +178,15 @@ const ResultProcessing = () => {
   const [selectedSemester, setSelectedSemester] = useState("6");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedResults, setSelectedResults] = useState([]);
+  const [addForm, setAddForm] = useState({
+    studentId: '',
+    studentName: '',
+    semester: '6',
+    department: 'CS',
+    subjectsText: 'Computer Networks:85:A\nDatabase Systems:92:A+',
+    gpa: '8.5',
+    cgpa: '8.3',
+  });
   const [results, setResults] = useState([]);
   const [deptFilter, setDeptFilter] = useState(globalDepartment || "");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -109,6 +253,20 @@ const ResultProcessing = () => {
     }
   }, []);
 
+  // Live update results when another tab (CoE) publishes and updates localStorage
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === 'resultsData') {
+        try {
+          const data = e.newValue ? JSON.parse(e.newValue) : [];
+          setResults(data);
+        } catch {}
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   // Keep local department filter in sync with global selection
   useEffect(() => {
     setDeptFilter(globalDepartment || "");
@@ -138,6 +296,43 @@ const ResultProcessing = () => {
     });
   }, [results, selectedSemester, searchQuery, deptFilter]);
 
+  const parseSubjects = (text) => {
+    // Lines as: name:marks:grade
+    return (text || '')
+      .split(/\r?\n/)
+      .map(l => l.trim())
+      .filter(Boolean)
+      .map(l => {
+        const [name, marks, grade] = l.split(':');
+        return { name: name?.trim() || 'Subject', marks: Number(marks)||0, grade: (grade||'').trim() || 'NA' };
+      });
+  };
+
+  const addResult = (publish = false) => {
+    const subjects = parseSubjects(addForm.subjectsText);
+    if (!addForm.studentId || !addForm.studentName || subjects.length === 0) {
+      toaster.error('Fill Student ID, Name and at least one subject');
+      return;
+    }
+    const newEntry = {
+      id: `${Date.now()}`,
+      studentId: addForm.studentId,
+      studentName: addForm.studentName,
+      semester: Number(addForm.semester)||6,
+      department: addForm.department || 'CS',
+      subjects,
+      gpa: Number(addForm.gpa)||0,
+      cgpa: Number(addForm.cgpa)||0,
+      status: publish ? 'published' : 'draft',
+    };
+    const updated = [...results, newEntry];
+    setResults(updated);
+    localStorage.setItem('resultsData', JSON.stringify(updated));
+    toaster.success(publish ? 'Result added and published' : 'Result saved as draft');
+    // Reset minimal
+    setAddForm(f => ({ ...f, studentId: '', studentName: '' }));
+  };
+
   const toggleSelect = (id) => {
     setSelectedResults((prev) =>
       prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
@@ -154,15 +349,72 @@ const ResultProcessing = () => {
   };
 
   const handlePublish = () => {
-    const updatedResults = results.map((r) =>
-      r.semester.toString() === selectedSemester
-        ? { ...r, status: "published" }
-        : r
-    );
+    const publishAll = !selectedSemester || selectedSemester === '';
+    const updatedResults = results.map((r) => {
+      const match = publishAll || r.semester.toString() === selectedSemester;
+      return match ? { ...r, status: 'published' } : r;
+    });
     setResults(updatedResults);
-    localStorage.setItem("resultsData", JSON.stringify(updatedResults));
-    toaster.success("All results published!");
+    localStorage.setItem('resultsData', JSON.stringify(updatedResults));
+    toaster.success(publishAll ? 'All semesters published!' : `Semester ${selectedSemester} published!`);
     setShowConfirmModal(false);
+  };
+
+  const seedSample = () => {
+    const sem = selectedSemester || 6;
+    const demo = [
+      {
+        id: `${sem}-A1`,
+        studentId: 'STU-001',
+        studentName: 'Demo Student',
+        semester: Number(sem),
+        department: 'CS',
+        subjects: [
+          { name: 'Computer Networks', marks: 78, grade: 'B+' },
+          { name: 'Database Systems', marks: 86, grade: 'A' },
+          { name: 'Software Engineering', marks: 82, grade: 'A' },
+          { name: 'Operating Systems', marks: 80, grade: 'A' },
+        ],
+        gpa: 8.2,
+        cgpa: 8.0,
+        status: 'published',
+      },
+      {
+        id: `${sem}-A2`,
+        studentId: 'CS2021001',
+        studentName: 'Alex Rodriguez',
+        semester: Number(sem),
+        department: 'CS',
+        subjects: [
+          { name: 'Computer Networks', marks: 85, grade: 'A' },
+          { name: 'Database Systems', marks: 92, grade: 'A+' },
+          { name: 'Software Engineering', marks: 78, grade: 'B+' },
+          { name: 'Operating Systems', marks: 88, grade: 'A' },
+        ],
+        gpa: 8.7,
+        cgpa: 8.5,
+        status: 'published',
+      },
+      {
+        id: `${sem}-A3`,
+        studentId: 'CS2021002',
+        studentName: 'Sarah Johnson',
+        semester: Number(sem),
+        department: 'CS',
+        subjects: [
+          { name: 'Computer Networks', marks: 92, grade: 'A+' },
+          { name: 'Database Systems', marks: 89, grade: 'A' },
+          { name: 'Software Engineering', marks: 94, grade: 'A+' },
+          { name: 'Operating Systems', marks: 91, grade: 'A+' },
+        ],
+        gpa: 9.2,
+        cgpa: 9.0,
+        status: 'draft',
+      },
+    ];
+    setResults(demo);
+    localStorage.setItem('resultsData', JSON.stringify(demo));
+    toaster.success('Seeded sample results');
   };
 
   const generateTranscriptPDF = async (student) => {
@@ -439,6 +691,11 @@ const ResultProcessing = () => {
     printWindow.print();
   };
 
+  // If logged-in user is a student, show the student results view that reflects published data
+  if (user?.role === 'student') {
+    return <StudentResults externalResults={results} />;
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
       {sidebarVisible && <Sidebar />}
@@ -465,6 +722,13 @@ const ResultProcessing = () => {
                   ))}
                 </select>
                 
+                <button
+                  onClick={seedSample}
+                  className="bg-gray-100 text-gray-800 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-200 border flex items-center"
+                >
+                  Seed Sample Data
+                </button>
+
                 {selectedResults.length > 0 && (
                   <button
                     onClick={() => downloadMultipleTranscripts(selectedResults)}
@@ -476,7 +740,7 @@ const ResultProcessing = () => {
                 )}
                 
                 <button
-                  onClick={() => setShowConfirmModal(true)}
+                  onClick={handlePublish}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 flex items-center"
                 >
                   <CheckSquare className="h-4 w-4 mr-2" />
@@ -522,6 +786,28 @@ const ResultProcessing = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 border rounded-lg"
                 />
+              </div>
+            </div>
+
+            {/* Quick Add Form (Admin) */}
+            <div className="bg-white rounded-xl shadow-sm border p-4 mb-6">
+              <h2 className="font-semibold mb-3">Add Semester Result (Quick)</h2>
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+                <input className="border rounded px-3 py-2" placeholder="Student ID (e.g., CS2021001)" value={addForm.studentId} onChange={e=> setAddForm({ ...addForm, studentId: e.target.value })} />
+                <input className="border rounded px-3 py-2 md:col-span-2" placeholder="Student Name" value={addForm.studentName} onChange={e=> setAddForm({ ...addForm, studentName: e.target.value })} />
+                <select className="border rounded px-3 py-2" value={addForm.semester} onChange={e=> setAddForm({ ...addForm, semester: e.target.value })}>
+                  {semesters.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+                <select className="border rounded px-3 py-2" value={addForm.department} onChange={e=> setAddForm({ ...addForm, department: e.target.value })}>
+                  {departments.map(d => <option key={d.id} value={d.id}>{d.id}</option>)}
+                </select>
+                <input className="border rounded px-3 py-2" placeholder="GPA" value={addForm.gpa} onChange={e=> setAddForm({ ...addForm, gpa: e.target.value })} />
+                <input className="border rounded px-3 py-2" placeholder="CGPA" value={addForm.cgpa} onChange={e=> setAddForm({ ...addForm, cgpa: e.target.value })} />
+                <textarea className="border rounded px-3 py-2 md:col-span-6" rows={3} placeholder="Subjects (one per line): Name:Marks:Grade" value={addForm.subjectsText} onChange={e=> setAddForm({ ...addForm, subjectsText: e.target.value })}></textarea>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button onClick={() => addResult(false)} className="px-3 py-2 border rounded hover:bg-gray-50">Save as Draft</button>
+                <button onClick={() => addResult(true)} className="px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Add & Publish</button>
               </div>
             </div>
 

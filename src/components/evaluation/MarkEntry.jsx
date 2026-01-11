@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import { AuthContext } from "../../App";
 import Sidebar from "../layout/Sidebar";
 import Header from "../layout/Header";
@@ -116,6 +117,7 @@ export default function MarkEntry() {
   const { user = { name: "Guest", role: "teacher" }, sidebarVisible } = useContext(AuthContext) || {};
   const toaster = useToaster();
   const { departments, selectedDepartment: globalDepartment } = useData();
+  const navigate = useNavigate();
 
   // filters
   const [program, setProgram] = useState("BTech");
@@ -295,6 +297,42 @@ export default function MarkEntry() {
         setStudents((prev) => prev.map((s) => ({ ...s, status: "published" })));
         setMessage({ type: "success", text: `Published successfully at ${res.publishedAt}` });
         toaster.success("Published successfully.");
+
+        // Persist to localStorage resultsData for Result Processing page
+        try {
+          const raw = localStorage.getItem('resultsData');
+          const existing = raw ? JSON.parse(raw) : [];
+
+          // Derive a coarse semester from year (demo mapping)
+          const semMap = { 'I': 2, 'II': 4, 'III': 6, 'IV': 8 };
+          const semester = semMap[year] || 6;
+          const deptId = department; // already an id from select
+
+          const subjectName = String(selectedExam).split(' - ')[0] || selectedExam;
+
+          const newEntries = students.map(s => ({
+            id: `${semester}-${subjectName}-${s.studentId}`,
+            studentId: s.studentId,
+            studentName: s.studentName,
+            semester,
+            department: deptId,
+            subjects: [
+              { name: subjectName, marks: Number(s.marksObtained)||0, grade: s.grade || '' }
+            ],
+            gpa: 0,
+            cgpa: 0,
+            status: 'published',
+          }));
+
+          // Merge: replace any existing with same id
+          const byId = new Map(existing.map(e => [e.id, e]));
+          newEntries.forEach(e => byId.set(e.id, e));
+          const merged = Array.from(byId.values());
+          localStorage.setItem('resultsData', JSON.stringify(merged));
+        } catch {}
+
+        // Redirect to results page
+        navigate('/results');
       }
     } catch (err) {
       setMessage({ type: "error", text: `Publish failed: ${err.message}` });
@@ -334,6 +372,9 @@ export default function MarkEntry() {
                   <input type="file" accept=".csv" className="hidden" onChange={(e) => importCSV(e.target.files?.[0])} />
                   <span>{importBusy ? "Importing..." : "Import CSV"}</span>
                 </label>
+                <button onClick={handlePublish} className="bg-indigo-600 text-white px-3 py-2 rounded shadow-sm hover:bg-indigo-700 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" /> Publish & View Results
+                </button>
                 {user?.role === "admin" && (
                   <button onClick={() => setShowPublishModal(true)} className="bg-purple-600 text-white px-3 py-2 rounded shadow-sm hover:bg-purple-700">Publish</button>
                 )}

@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { CreditCard, Download, QrCode, Calendar, Clock, MapPin, User, Search, Filter, Printer, FileText } from 'lucide-react';
 import { AuthContext } from '../../App';
-import { useData } from '../../contexts/DataContext';
+import { useData } from '../../contexts/DataContext.jsx';
 import { useToaster } from '../../contexts/ToastContext.jsx';
 import Header from '../layout/Header';
 import Sidebar from '../layout/Sidebar';
@@ -19,7 +19,8 @@ const HallTickets = () => {
     getStudentsBySemester,
     generateHallTickets,
     selectedDepartment: globalDepartment,
-    examTypes
+    examTypes,
+    getStudentById,
   } = useData();
 
   // --- Start: Generation Feature Logic ---
@@ -353,6 +354,10 @@ const HallTickets = () => {
   const handleDownloadTicket = (ticket) => {
     // Create a printable version of the ticket
     const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toaster.error('Popup blocked. Please allow popups to download the hall ticket.');
+      return;
+    }
 
     
     // Generate the exam schedule HTML
@@ -772,6 +777,52 @@ const HallTickets = () => {
     printWindow.document.close();
   };
 
+  // Student-specific quick download for their own ticket
+  const downloadMyHallTicket = async () => {
+    if (!user || user.role !== 'student') return;
+    // Try to fetch full student record using internal id
+    const studentRecord = getStudentById(user.id) || students.find(s => s.rollNumber === user.rollNumber || s.id === user.id);
+    if (!studentRecord) { toaster.error('Student record not found'); return; }
+
+    // Determine student's exams
+    let studentExams = exams.filter(exam => 
+      String(exam.semester) === String(studentRecord.semester) && 
+      exam.department === studentRecord.department &&
+      exam.academicYear === studentRecord.academicYear
+    );
+    if (studentExams.length === 0) { toaster.error('No scheduled exams found for your profile'); return; }
+
+    const ticketData = {
+      studentId: studentRecord.id,
+      rollNumber: studentRecord.rollNumber,
+      name: studentRecord.name,
+      batch: studentRecord.batch,
+      semester: studentRecord.semester,
+      department: studentRecord.department,
+      academicYear: studentRecord.academicYear,
+      class: studentRecord.class,
+      exams: studentExams.map((exam, idx) => ({
+        examId: exam.id,
+        examTitle: exam.title,
+        courseCode: exam.courseCode,
+        courseName: exam.courseName,
+        examType: exam.examType,
+        examCode: exam.examCode,
+        date: exam.date,
+        time: `${exam.startTime} - ${exam.endTime}`,
+        duration: exam.duration,
+        venue: exam.venue,
+        maxMarks: exam.maxMarks,
+        passingMarks: exam.passingMarks,
+        seatNumber: `${exam.venue.replace('Hall ', '')}-${('1').padStart(3, '0')}`
+      })),
+      seatNumber: `${studentRecord.department}-${studentRecord.rollNumber}`
+    };
+    const qrData = JSON.stringify({ studentId: studentRecord.id, rollNumber: studentRecord.rollNumber, semester: studentRecord.semester, department: studentRecord.department });
+    const qrCodeDataUrl = await generateQRCode(qrData);
+    await handleDownloadTicket({ ...ticketData, qrCode: qrCodeDataUrl, generatedAt: new Date().toISOString() });
+  };
+
   const handleDownloadAllTickets = () => {
     if (generatedTickets.length === 0) return;
     
@@ -1091,7 +1142,10 @@ const HallTickets = () => {
   };
   
   const studentFilteredTickets = user?.role === 'student' 
-    ? staticHallTickets.filter(ticket => ticket.studentName === user.name)
+    ? staticHallTickets.filter(ticket => {
+        const key = user.rollNumber || user.id || '';
+        return ticket.studentId === key;
+      })
     : staticHallTickets;
     
   const managementFilteredTickets = staticHallTickets.filter(ticket =>
@@ -1117,9 +1171,9 @@ const HallTickets = () => {
                     <h1 className="text-3xl font-bold text-gray-900">DSU Hall Tickets</h1>
                     <p className="text-gray-600 mt-2">Download your exam hall tickets</p>
                   </div>
-                  <button className="btn-dsu-primary px-4 py-2 rounded-lg transition-colors flex items-center">
+                  <button onClick={downloadMyHallTicket} className="btn-dsu-primary px-4 py-2 rounded-lg transition-colors flex items-center">
                     <Download className="w-5 h-5 mr-2" />
-                    Download All
+                    Download My Hall Ticket
                   </button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -152,21 +152,189 @@ const ExamScheduling = () => {
   );
 
   const AddEditModal = ({ exam, onClose, onSave }) => {
-    const [form, setForm] = useState(exam || { title: '', subject: '', date: '', time: '', duration: '02:00', type: 'midterm', venue: '', department: '', semester: 1, status: 'scheduled', students: 0 });
+    const initialClassrooms = exam?.classrooms || [{ 
+      id: uid(), 
+      totalStudents: 0,
+      rows: [{ 
+        id: uid(), 
+        departments: [], 
+        year: '', 
+        semester: '',
+        students: 0,
+        columns: 4 
+      }]
+    }];
+    
+    const [form, setForm] = useState(exam || { 
+      title: '', 
+      subject: '', 
+      date: '', 
+      time: '', 
+      duration: '02:00', 
+      type: 'midterm', 
+      venue: '', 
+      department: '', 
+      semester: 1, 
+      status: 'scheduled', 
+      students: 0,
+      classrooms: initialClassrooms
+    });
     const initialRef = useRef(null);
     useEffect(() => { initialRef.current?.focus(); }, []);
     const update = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+    const addClassroom = () => {
+      const newClassrooms = [
+        ...form.classrooms, 
+        { 
+          id: uid(), 
+          totalStudents: 0,
+          rows: [{ 
+            id: uid(), 
+            departments: [], 
+            year: '', 
+            students: 0,
+            columns: 4 
+          }]
+        }
+      ];
+      update('classrooms', newClassrooms);
+    };
+
+    const removeClassroom = (id) => {
+      if (form.classrooms.length <= 1) return;
+      const newClassrooms = form.classrooms.filter(c => c.id !== id);
+      update('classrooms', newClassrooms);
+      
+      // Update total students count
+      const totalStudents = calculateTotalStudents(newClassrooms);
+      update('students', totalStudents);
+    };
+    
+    const addRow = (classroomId) => {
+      const newClassrooms = form.classrooms.map(classroom => {
+        if (classroom.id === classroomId) {
+          return {
+            ...classroom,
+            rows: [
+              ...classroom.rows,
+              { 
+                id: uid(), 
+                departments: [], 
+                year: '', 
+                semester: '',
+                students: 0,
+                columns: 4 
+              }
+            ]
+          };
+        }
+        return classroom;
+      });
+      update('classrooms', newClassrooms);
+    };
+    
+    const removeRow = (classroomId, rowId) => {
+      const newClassrooms = form.classrooms.map(classroom => {
+        if (classroom.id === classroomId) {
+          if (classroom.rows.length <= 1) return classroom;
+          
+          return {
+            ...classroom,
+            rows: classroom.rows.filter(row => row.id !== rowId)
+          };
+        }
+        return classroom;
+      });
+      
+      update('classrooms', newClassrooms);
+      
+      // Update total students count
+      const totalStudents = calculateTotalStudents(newClassrooms);
+      update('students', totalStudents);
+    };
+    
+    const calculateTotalStudents = (classrooms) => {
+      return classrooms.reduce((total, classroom) => {
+        const classroomTotal = classroom.rows.reduce((sum, row) => sum + (row.students || 0), 0);
+        return total + classroomTotal;
+      }, 0);
+    };
+
+    const updateRow = (classroomId, rowId, field, value) => {
+      const newClassrooms = form.classrooms.map(classroom => {
+        if (classroom.id === classroomId) {
+          const updatedRows = classroom.rows.map(row => {
+            if (row.id === rowId) {
+              const updatedRow = { 
+                ...row, 
+                [field]: field === 'students' || field === 'columns' ? Number(value) : value 
+              };
+              return updatedRow;
+            }
+            return row;
+          });
+          
+          // Calculate classroom total students
+          const classroomTotal = updatedRows.reduce((sum, row) => sum + (row.students || 0), 0);
+          
+          return {
+            ...classroom,
+            rows: updatedRows,
+            totalStudents: classroomTotal
+          };
+        }
+        return classroom;
+      });
+      
+      update('classrooms', newClassrooms);
+      
+      // Update total students count
+      const totalStudents = calculateTotalStudents(newClassrooms);
+      update('students', totalStudents);
+    };
+    
+    const handleDepartmentChange = (classroomId, rowId, deptId, isChecked) => {
+      const newClassrooms = form.classrooms.map(classroom => {
+        if (classroom.id === classroomId) {
+          const updatedRows = classroom.rows.map(row => {
+            if (row.id === rowId) {
+              let updatedDepartments = [...row.departments];
+              
+              if (isChecked) {
+                // Add department if not already in the list
+                if (!updatedDepartments.includes(deptId)) {
+                  updatedDepartments.push(deptId);
+                }
+              } else {
+                // Remove department
+                updatedDepartments = updatedDepartments.filter(id => id !== deptId);
+              }
+              
+              return { ...row, departments: updatedDepartments };
+            }
+            return row;
+          });
+          
+          return { ...classroom, rows: updatedRows };
+        }
+        return classroom;
+      });
+      
+      update('classrooms', newClassrooms);
+    };
+
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden />
-        <div className="relative z-60 w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="relative z-60 w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
           <div className="flex items-center justify-between p-4 border-b">
             <h3 className="text-lg font-semibold">{exam ? 'Edit Exam' : 'Schedule New Exam'}</h3>
             <button onClick={onClose} className="p-2 rounded hover:bg-gray-100"><X className="w-5 h-5" /></button>
           </div>
 
-          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="overflow-y-auto p-4" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700">Title</label>
               <input ref={initialRef} value={form.title} onChange={(e) => update('title', e.target.value)} className="mt-1 block w-full rounded-lg border px-3 py-2" />
@@ -230,8 +398,8 @@ const ExamScheduling = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Students</label>
-              <input type="number" min="0" value={form.students} onChange={(e) => update('students', Number(e.target.value))} className="mt-1 block w-full rounded-lg border px-3 py-2" />
+              <label className="block text-sm font-medium text-gray-700">Total Students</label>
+              <input type="number" min="0" value={form.students} readOnly className="mt-1 block w-full rounded-lg border px-3 py-2 bg-gray-50" />
             </div>
 
             <div>
@@ -245,12 +413,189 @@ const ExamScheduling = () => {
             </div>
           </div>
 
+          {/* Classroom Allocation Section */}
+          <div className="p-4 border-t">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium text-gray-800">Classroom Allocation</h4>
+              <button 
+                onClick={addClassroom} 
+                className="inline-flex items-center gap-1 px-3 py-1 text-sm rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
+              >
+                <Plus className="w-4 h-4" /> Add Classroom
+              </button>
+            </div>
+            
+            {form.classrooms.map((classroom, index) => (
+              <div key={classroom.id} className="mb-3 p-3 border rounded-lg bg-gray-50">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="text-sm font-medium">Classroom {index + 1}</h5>
+                  {form.classrooms.length > 1 && (
+                    <button 
+                      onClick={() => removeClassroom(classroom.id)} 
+                      className="p-1 text-red-500 hover:bg-red-50 rounded"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Classroom Configuration */}
+                <div className="mb-3 pb-3 border-b border-gray-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700">Total Benches</label>
+                      <input 
+                        type="number" 
+                        min="1" 
+                        value={classroom.totalBenches || 40} 
+                        onChange={(e) => updateClassroom(classroom.id, 'totalBenches', e.target.value)} 
+                        className="mt-1 block w-full rounded-lg border px-3 py-2 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700">Columns</label>
+                      <select 
+                        value={classroom.columns || 4} 
+                        onChange={(e) => updateClassroom(classroom.id, 'columns', e.target.value)} 
+                        className="mt-1 block w-full rounded-lg border px-3 py-2 text-sm"
+                      >
+                        <option value="2">2 Columns</option>
+                        <option value="3">3 Columns</option>
+                        <option value="4">4 Columns</option>
+                        <option value="5">5 Columns</option>
+                        <option value="6">6 Columns</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Row Allocations */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h6 className="text-xs font-medium text-gray-700">Row Allocations</h6>
+                    <button 
+                      onClick={() => addRow(classroom.id)} 
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
+                    >
+                      <Plus className="w-3 h-3" /> Add Row
+                    </button>
+                  </div>
+                  
+                  {classroom.rows.map((row, rowIndex) => (
+                    <div key={row.id} className="mb-2 p-2 border rounded bg-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium">Row {rowIndex + 1}</span>
+                        {classroom.rows.length > 1 && (
+                          <button 
+                            onClick={() => removeRow(classroom.id, row.id)} 
+                            className="p-1 text-red-500 hover:bg-red-50 rounded"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700">Department</label>
+                          <div className="mt-1 max-h-24 overflow-y-auto border rounded-lg p-2">
+                            {departments.map((dept) => (
+                              <div key={dept.id} className="flex items-center mb-1">
+                                <input
+                                  type="checkbox"
+                                  id={`dept-${classroom.id}-${row.id}-${dept.id}`}
+                                  checked={row.departments.includes(dept.id)}
+                                  onChange={(e) => handleDepartmentChange(classroom.id, row.id, dept.id, e.target.checked)}
+                                  className="mr-2"
+                                />
+                                <label htmlFor={`dept-${classroom.id}-${row.id}-${dept.id}`} className="text-xs">
+                                  {dept.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700">Year</label>
+                          <select 
+                            value={row.year} 
+                            onChange={(e) => updateRow(classroom.id, row.id, 'year', e.target.value)} 
+                            className="mt-1 block w-full rounded-lg border px-3 py-2 text-xs"
+                          >
+                            <option value="">Select year</option>
+                            <option value="1">First Year</option>
+                            <option value="2">Second Year</option>
+                            <option value="3">Third Year</option>
+                            <option value="4">Fourth Year</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700">Semester</label>
+                          <select 
+                            value={row.semester} 
+                            onChange={(e) => updateRow(classroom.id, row.id, 'semester', e.target.value)} 
+                            className="mt-1 block w-full rounded-lg border px-3 py-2 text-xs"
+                          >
+                            <option value="">Select semester</option>
+                            {Array.from({ length: 8 }, (_, i) => i + 1).map((s) => (
+                              <option key={s} value={s}>{`Semester ${s}`}</option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700">Students</label>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            value={row.students} 
+                            onChange={(e) => updateRow(classroom.id, row.id, 'students', e.target.value)} 
+                            className="mt-1 block w-full rounded-lg border px-3 py-2 text-xs"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700">Selected Departments</label>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {row.departments.length > 0 ? (
+                            row.departments.map(deptId => {
+                              const dept = departments.find(d => d.id === deptId);
+                              return dept ? (
+                                <span key={deptId} className="inline-flex items-center px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs">
+                                  {dept.name}
+                                </span>
+                              ) : null;
+                            })
+                          ) : (
+                            <span className="text-xs text-gray-500">No departments selected</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Classroom Summary */}
+                <div className="mt-2 pt-2 border-t border-gray-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-medium">Total Students in Classroom:</span>
+                    <span className="text-xs font-medium">{classroom.rows.reduce((sum, row) => sum + (row.students || 0), 0)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div className="p-4 border-t flex items-center justify-end gap-2">
             <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200">Cancel</button>
             <button onClick={() => onSave(form)} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
               {exam ? 'Save Changes' : 'Schedule Exam'}
             </button>
           </div>
+        </div>
         </div>
       </div>
     );
@@ -262,13 +607,13 @@ const ExamScheduling = () => {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/40" onClick={onClose} aria-hidden />
-        <div className="relative z-60 w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="relative z-60 w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
           <div className="flex items-center justify-between p-4 border-b">
             <h3 className="text-lg font-semibold">{exam.title}</h3>
             <button onClick={onClose} className="p-2 rounded hover:bg-gray-100"><X className="w-5 h-5" /></button>
           </div>
 
-          <div className="p-4 space-y-3">
+          <div className="overflow-y-auto p-4 space-y-3" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-gray-400" />
               <div>
@@ -293,6 +638,89 @@ const ExamScheduling = () => {
             </div>
 
             <div className="text-sm text-gray-700"><strong>Subject:</strong> {exam.subject}</div>
+            
+            {/* Classroom Allocation Section */}
+            {exam.classrooms && exam.classrooms.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">Classroom Allocation</h4>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {exam.classrooms.map((classroom, index) => (
+                    <div key={classroom.id || index} className="p-2 bg-gray-50 rounded border text-xs">
+                      <div className="flex justify-between mb-1">
+                        <span className="font-medium">Classroom {index + 1}</span>
+                        <span>
+                          <strong>Total Students:</strong> {classroom.rows?.reduce((sum, row) => sum + (row.students || 0), 0) || classroom.students || 0}
+                        </span>
+                      </div>
+                      
+                      {/* Configuration */}
+                      <div className="flex justify-between text-xs mb-2">
+                        <span>
+                          <strong>Benches:</strong> {classroom.totalBenches || 40}
+                        </span>
+                        <span>
+                          <strong>Columns:</strong> {classroom.columns || 4}
+                        </span>
+                      </div>
+                      
+                      {/* Row Allocations */}
+                      {classroom.rows && classroom.rows.length > 0 ? (
+                        <div className="mt-2">
+                          <div className="text-xs font-medium mb-1">Row Allocations:</div>
+                          <div className="space-y-1">
+                            {classroom.rows.map((row, rowIndex) => (
+                              <div key={row.id || rowIndex} className="p-1 bg-white rounded border">
+                                <div className="flex justify-between mb-1">
+                                  <span className="text-xs font-medium">Row {rowIndex + 1}</span>
+                                  <span className="text-xs">
+                                    <strong>Students:</strong> {row.students || 0}
+                                  </span>
+                                </div>
+                                
+                                <div className="mb-1">
+                                  <strong>Year:</strong> {row.year ? `Year ${row.year}` : 'N/A'}
+                                </div>
+                                
+                                <div className="mb-1">
+                                  <strong>Semester:</strong> {row.semester ? `Semester ${row.semester}` : 'N/A'}
+                                </div>
+                                
+                                <div>
+                                  <strong>Departments:</strong>
+                                  {row.departments && row.departments.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {row.departments.map(deptId => {
+                                        const dept = departments.find(d => d.id === deptId);
+                                        return dept ? (
+                                          <span key={deptId} className="inline-flex px-1 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs">
+                                            {dept.name}
+                                          </span>
+                                        ) : null;
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <span className="text-gray-500 ml-1">None</span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex justify-between">
+                          <span>
+                            <strong>Department:</strong> {departments.find(d => d.id === classroom.department)?.name || classroom.department || 'N/A'}
+                          </span>
+                          <span>
+                            <strong>Year:</strong> {classroom.year ? `Year ${classroom.year}` : 'N/A'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="p-4 border-t flex items-center justify-end gap-2">

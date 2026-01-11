@@ -38,6 +38,48 @@ const sampleExams = [
   { id: 'EX-501', title: 'Structural Analysis', courseCode: 'CE301', courseName: 'Structural Analysis', examType: 'final', examCode: 'FE-SA-301', academicYear: '2024-25', department: 'CE', semester: '6', date: '2025-03-29', startTime: '11:00', endTime: '14:00', duration: '03:00', venue: 'Hall N', maxMarks: 100, passingMarks: 40, subject: 'CE301', time: '11:00', type: 'final', status: 'scheduled', students: 40 },
 ];
 
+// Sample results with versioning per course/semester
+const sampleResults = [
+  // STU-001: Fill semesters 1..8 with at least one course each
+  { id: 'RES-001', studentId: 'STU-001', courseCode: 'CS101', courseName: 'Programming I', semester: '1', internal: 20, external: 45, practical: 10, total: 75, grade: 'A', resultStatus: 'pass', version: 1, updatedAt: '2024-10-01', updatedBy: 'faculty' },
+  { id: 'RES-004', studentId: 'STU-001', courseCode: 'MA101', courseName: 'Engineering Mathematics I', semester: '1', internal: 18, external: 42, practical: 0, total: 60, grade: 'B', resultStatus: 'pass', version: 1, updatedAt: '2024-10-01', updatedBy: 'faculty' },
+
+  { id: 'RES-005', studentId: 'STU-001', courseCode: 'CS102', courseName: 'Programming II', semester: '2', internal: 22, external: 40, practical: 10, total: 72, grade: 'A', resultStatus: 'pass', version: 1, updatedAt: '2025-02-01', updatedBy: 'faculty' },
+  { id: 'RES-006', studentId: 'STU-001', courseCode: 'MA102', courseName: 'Engineering Mathematics II', semester: '2', internal: 15, external: 30, practical: 0, total: 45, grade: 'C', resultStatus: 'pass', version: 1, updatedAt: '2025-02-01', updatedBy: 'faculty' },
+
+  { id: 'RES-007', studentId: 'STU-001', courseCode: 'CS201', courseName: 'Data Structures', semester: '3', internal: 25, external: 35, practical: 10, total: 70, grade: 'A', resultStatus: 'pass', version: 1, updatedAt: '2025-07-01', updatedBy: 'faculty' },
+  { id: 'RES-008', studentId: 'STU-001', courseCode: 'EC201', courseName: 'Digital Logic', semester: '3', internal: 20, external: 28, practical: 0, total: 48, grade: 'C', resultStatus: 'pass', version: 1, updatedAt: '2025-07-01', updatedBy: 'faculty' },
+
+  { id: 'RES-009', studentId: 'STU-001', courseCode: 'CS302', courseName: 'Database Systems', semester: '4', internal: 18, external: 20, practical: 0, total: 38, grade: 'F', resultStatus: 'fail', version: 1, updatedAt: '2026-01-15', updatedBy: 'faculty' },
+  // Later override by CoE to pass
+  { id: 'RES-010', studentId: 'STU-001', courseCode: 'CS302', courseName: 'Database Systems', semester: '4', internal: 20, external: 25, practical: 0, total: 45, grade: 'C', resultStatus: 'pass', version: 2, updatedAt: '2026-02-10', updatedBy: 'coe', overrideReason: 'Moderation' },
+
+  { id: 'RES-011', studentId: 'STU-001', courseCode: 'CS301', courseName: 'Computer Networks', semester: '6', internal: 40, external: 50, practical: 0, total: 90, grade: 'A', resultStatus: 'pass', version: 1, updatedAt: '2026-12-01', updatedBy: 'faculty' },
+  { id: 'RES-012', studentId: 'STU-001', courseCode: 'CS303', courseName: 'Operating Systems', semester: '6', internal: 30, external: 40, practical: 0, total: 70, grade: 'A', resultStatus: 'pass', version: 1, updatedAt: '2026-12-01', updatedBy: 'faculty' },
+
+  { id: 'RES-013', studentId: 'STU-001', courseCode: 'CS401', courseName: 'Software Engineering', semester: '8', internal: 35, external: 50, practical: 0, total: 85, grade: 'A+', resultStatus: 'pass', version: 1, updatedAt: '2027-06-01', updatedBy: 'faculty' },
+  { id: 'RES-014', studentId: 'STU-001', courseCode: 'IT401', courseName: 'Mobile Application Development', semester: '8', internal: 28, external: 45, practical: 0, total: 73, grade: 'A', resultStatus: 'pass', version: 1, updatedAt: '2027-06-01', updatedBy: 'faculty' },
+
+  // Fill remaining semesters with one course each for visibility
+  { id: 'RES-015', studentId: 'STU-001', courseCode: 'MA201', courseName: 'Probability & Statistics', semester: '5', internal: 22, external: 30, practical: 0, total: 52, grade: 'B', resultStatus: 'pass', version: 1, updatedAt: '2026-08-01', updatedBy: 'faculty' },
+  { id: 'RES-016', studentId: 'STU-001', courseCode: 'CS202', courseName: 'OOP with Java', semester: '5', internal: 25, external: 32, practical: 10, total: 67, grade: 'B', resultStatus: 'pass', version: 1, updatedAt: '2026-08-01', updatedBy: 'faculty' },
+
+  { id: 'RES-017', studentId: 'STU-001', courseCode: 'CS203', courseName: 'Computer Organization', semester: '4', internal: 20, external: 30, practical: 0, total: 50, grade: 'C', resultStatus: 'pass', version: 1, updatedAt: '2026-01-15', updatedBy: 'faculty' },
+
+  { id: 'RES-018', studentId: 'STU-001', courseCode: 'HU101', courseName: 'Professional Communication', semester: '7', internal: 24, external: 26, practical: 0, total: 50, grade: 'C', resultStatus: 'pass', version: 1, updatedAt: '2027-02-01', updatedBy: 'faculty' },
+  { id: 'RES-019', studentId: 'STU-001', courseCode: 'CS402', courseName: 'Distributed Systems', semester: '7', internal: 28, external: 40, practical: 0, total: 68, grade: 'B', resultStatus: 'pass', version: 1, updatedAt: '2027-02-01', updatedBy: 'faculty' },
+
+  // STU-002: a few entries
+  { id: 'RES-020', studentId: 'STU-002', courseCode: 'CS302', courseName: 'Database Systems', semester: '4', internal: 22, external: 28, practical: 0, total: 50, grade: 'C', resultStatus: 'pass', version: 1, updatedAt: '2025-03-01', updatedBy: 'faculty' },
+  { id: 'RES-021', studentId: 'STU-002', courseCode: 'CS201', courseName: 'Data Structures', semester: '3', internal: 24, external: 35, practical: 10, total: 69, grade: 'B', resultStatus: 'pass', version: 1, updatedAt: '2024-11-01', updatedBy: 'faculty' },
+];
+
+// Sample malpractice records
+const sampleMalpractices = [
+  { id: 'MP-001', studentId: 'STU-001', courseCode: 'CS302', assessment: 'final', date: '2025-03-22', status: 'adjudicated', action: 'withheld', description: 'Possession of notes', reportedBy: 'invigilator' },
+  { id: 'MP-002', studentId: 'STU-202', courseCode: 'ECE401', assessment: 'final', date: '2025-03-26', status: 'pending', action: '', description: 'Mobile phone usage', reportedBy: 'invigilator' },
+];
+
 const sampleStudents = [
   // CS
   { id: 'STU-001', rollNumber: 'CS2021001', name: 'Alex Rodriguez', batch: '2021', semester: '6', department: 'CS', academicYear: '2024-25', class: 'CS-A' },
@@ -163,6 +205,8 @@ export const DataProvider = ({ children }) => {
   const [exams, setExams] = useState(loadInitialExams);
   const [students, setStudents] = useState(sampleStudents);
   const [hallTickets, setHallTickets] = useState([]);
+  const [results, setResults] = useState(sampleResults);
+  const [malpractices, setMalpractices] = useState(sampleMalpractices);
 
   const getExamsBySemester = (sem) => exams.filter((e) => e.semester === String(sem));
   const getStudentsBySemester = (sem) => students.filter((s) => s.semester === String(sem));
@@ -214,6 +258,8 @@ export const DataProvider = ({ children }) => {
     exams,
     students,
     hallTickets,
+    results,
+    malpractices,
     dispatch,
     ActionTypes,
     getExamsBySemester,
@@ -223,12 +269,39 @@ export const DataProvider = ({ children }) => {
     setExams,
     setStudents,
     setHallTickets,
+    setResults,
+    setMalpractices,
     departments,
     selectedDepartment,
     setSelectedDepartment,
     semesters,
     examTypes,
     getExamTypeLabel,
+    // helpers
+    getStudentById: (id) => (students || []).find(s => s.id === id),
+    getResultsByStudent: (studentId) => (results || []).filter(r => r.studentId === studentId),
+    getMalpracticesByStudent: (studentId) => (malpractices || []).filter(m => m.studentId === studentId),
+    addCoEOverrideResult: ({ studentId, courseCode, updates, reason, updatedBy = 'coe' }) => {
+      setResults((prev) => {
+        const current = prev.filter(r => r.studentId === studentId && r.courseCode === courseCode);
+        const latest = current.sort((a,b) => (b.version||0)-(a.version||0))[0];
+        const base = latest || { id: `RES-${Date.now()}`, studentId, courseCode, courseName: courseCode, semester: '', internal: 0, external: 0, practical: 0, total: 0, grade: 'NA', resultStatus: 'pending', version: 0 };
+        const next = { ...base, ...updates };
+        next.version = (base.version || 0) + 1;
+        next.updatedAt = new Date().toISOString().slice(0,10);
+        next.updatedBy = updatedBy;
+        next.overrideReason = reason || '';
+        // recompute total and status if fields present
+        const internal = Number(next.internal||0);
+        const external = Number(next.external||0);
+        const practical = Number(next.practical||0);
+        next.total = internal + external + practical;
+        next.resultStatus = next.total >= 40 ? 'pass' : 'fail';
+        // naive grade mapping
+        next.grade = next.total >= 85 ? 'A+' : next.total >= 70 ? 'A' : next.total >= 55 ? 'B' : next.total >= 40 ? 'C' : 'F';
+        return [...prev, { ...next, id: `RES-${Date.now()}` }];
+      });
+    },
   }), [exams, students, hallTickets, selectedDepartment]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
