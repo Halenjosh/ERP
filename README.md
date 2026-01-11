@@ -167,3 +167,4 @@ These are for demonstration only and are handled in `Login.jsx`.
 - Global department filter in `Header` syncing to `DataContext`
 - Expose `semesters` master list from `DataContext`
 - Replace inline banners with toasts where appropriate, or vice-versa depending on UX preference
+# exam-cell
